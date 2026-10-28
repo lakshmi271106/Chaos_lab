@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChaosLab | Resilience dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link href="/app.css" rel="stylesheet"><link href="/nav.css" rel="stylesheet">
+</head>
+<body>
+  <section id="login-screen" class="login-screen" hidden>
+    <div class="login-card">
+      <div class="login-brand"><span>◈</span> ChaosLab</div>
+      <div class="kicker"><i></i> CONTROLLED FAILURE LAB</div>
+      <h1>Welcome to the lab</h1><p class="login-lede">Sign in to explore safe, simulated resilience experiments.</p>
+      <form id="login-form">
+        <label for="demo-name">Display name</label><input id="demo-name" name="name" autocomplete="name" maxlength="40" placeholder="Your name" required>
+        <label for="demo-password">Demo password</label><input id="demo-password" name="password" type="password" autocomplete="off" placeholder="Enter any value" required>
+        <button class="action-button primary" type="submit">Sign in to ChaosLab <span>→</span></button>
+      </form>
+      <div class="demo-note"><b>Demo sign-in only</b><br>This page does not verify or send your password. It stores only your display name for this browser session. Do not enter a real password.</div>
+      <small class="login-foot">SAFE SIMULATION MODE · LOCAL LEARNING ENVIRONMENT</small>
+    </div>
+  </section>
+
+  <div id="app-shell" class="app-layout" hidden>
+    <aside class="sidebar">
+      <a href="#overview" class="sidebar-brand"><span>◈</span><b>ChaosLab</b></a>
+      <div class="side-caption">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <a href="#overview" class="nav-link active"><span>⌂</span>Overview</a>
+        <a href="#experiments" class="nav-link"><span>ϟ</span>Experiments</a>
+        <a href="#monitoring" class="nav-link"><span>⌁</span>Monitoring</a>
+        <a href="#activity" class="nav-link"><span>◷</span>Activity log</a>
+        <a href="#settings" class="nav-link"><span>⚙</span>Settings</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="sim-label"><i></i> SIMULATION MODE</div><div class="user-chip"><span class="avatar" id="avatar">D</span><div><b id="user-name">Demo user</b><small>Local demo session</small></div></div><button id="logout" class="logout-button">↪ <span>Sign out</span></button></div>
+    </aside>
+
+    <div class="app-main">
+      <main class="shell">
+        <section id="overview" class="section-block">
+          <header class="hero">
+            <div class="hero-top"><div><div class="kicker"><i></i> CONTROLLED FAILURE LAB</div><h1>Chaos Engineering</h1><p class="subtitle">Break things on purpose. Watch alerts, healing, logs, and SLO react live.</p></div><span class="safety"><span>⛨</span> Use on local hackathon env only</span></div>
+            <div class="quick-grid"><article class="quick"><span>MODES</span><b>latency / 5xx / db</b><small>plus cpu + crash</small></article><article class="quick"><span>WATCH</span><b>health / logs / slo</b><small>overview + data tabs</small></article><article class="quick"><span>ALERT PATH</span><b>discord + ui</b><small>burn / down / error rate</small></article><article class="quick"><span>RECOVERY</span><b>self-heal log</b><small>confirm restarts below</small></article></div>
+          </header>
+          <div class="welcome-line"><div><span class="eyebrow">YOUR LAB</span><h2>Good to see you, <span id="welcome-name">Demo</span></h2></div><a class="primary-link" href="#experiments">Start an experiment <span>→</span></a></div>
+        </section>
+
+        <section id="experiments" class="section-block">
+          <div class="section-heading"><div><span class="eyebrow">EXPERIMENT CONTROL</span><h2>Safe fault simulations</h2><p>Every action is limited to this demo application.</p></div><button class="pill-button" id="clear-top" onclick="clearAll()">All clear</button></div>
+          <div class="status-row">
+            <article class="status-panel"><div><span class="eyebrow">EXPERIMENT STATUS</span><strong id="system-status"><i class="status-dot"></i><span>No experiments running — system nominal</span></strong><small id="status-detail">awaiting fault injection...</small></div></article>
+            <article class="traffic-panel"><div class="pulse-icon">⌁</div><div class="traffic-copy"><b>Traffic Generator</b><small>synthetic checks keep your<br>local lab active.</small></div><button id="traffic-button" class="action-button warn" onclick="generateTraffic()">Generate 60s @ 5 req/s</button></article>
+          </div>
+          <div class="chaos-grid" aria-label="Safe chaos experiments">
+            <article class="chaos-card warn-card"><div class="card-head"><div class="icon amber">◷</div><div class="card-title"><h3>Inject Latency</h3><span>Slow-path reliability test</span></div><b class="severity warn">WARN</b></div><p>Add 2s delay to the simulated request signal. Observe timeout and response-time behavior.</p><div class="tags"><span>Delay: 2000ms</span><span>Signal: response time</span></div><button class="action-button warn" onclick="activate('Inject Latency','RESPONSE_DELAY',30,100)">Activate</button></article>
+            <article class="chaos-card critical-card"><div class="card-head"><div class="icon red">ϟ</div><div class="card-title"><h3>Error Storm</h3><span>Application failure burst</span></div><b class="severity critical">CRITICAL</b></div><p>Simulate a 50% failure burst. Observe the error-rate alert path and SLO burn response.</p><div class="tags"><span>Failure rate: 50%</span><span>Signal: SLO / alerts</span></div><button class="action-button critical" onclick="activate('Error Storm','SERVICE_FAILURE',30,50)">Activate</button></article>
+            <article class="chaos-card critical-card"><div class="card-head"><div class="icon violet">▤</div><div class="card-title"><h3>Kill Database</h3><span>Dependency outage simulation</span></div><b class="severity critical">CRITICAL</b></div><p>Simulate database unavailability in the lab. No real database connection is closed.</p><div class="tags"><span>Target: simulated DB</span><span>Signal: health / 5xx</span></div><button class="action-button critical" onclick="activate('Database Outage Simulation','SERVICE_FAILURE',30,85)">Activate</button></article>
+            <article class="chaos-card warn-card"><div class="card-head"><div class="icon blue">▦</div><div class="card-title"><h3>CPU Stress</h3><span>Saturation spike simulation</span></div><b class="severity warn">WARN</b></div><p>Simulate CPU saturation for 30 seconds. No CPU-intensive work runs on this machine.</p><div class="tags"><span>Duration: 30s</span><span>Signal: saturation</span></div><button class="action-button warn" onclick="activate('CPU Stress Simulation','CPU_STRESS',30,75)">30s Burn</button></article>
+            <article class="chaos-card critical-card"><div class="card-head"><div class="icon red">☻</div><div class="card-title"><h3>Kill Process</h3><span>Service recovery test</span></div><b class="severity critical">CRITICAL</b></div><p>Simulate a service crash and recovery signal. The ChaosLab process stays running.</p><div class="tags"><span>Target: simulated service</span><span>Signal: service down</span></div><button class="action-button critical" onclick="activate('Service Failure Simulation','SERVICE_FAILURE',30,100)">Simulate Failure</button></article>
+            <article class="chaos-card safe-card"><div class="card-head"><div class="icon green">✓</div><div class="card-title"><h3>Clear All</h3><span>Return to nominal state</span></div><b class="severity safe">SAFE</b></div><p>Stop all active simulations and return the lab to its normal state.</p><div class="tags"><span>Stops active tests</span><span>Recovery helper</span></div><button class="action-button safe" onclick="clearAll()">Clear All</button></article>
+          </div>
+        </section>
+
+        <section id="monitoring" class="section-block monitor-section"><div class="section-heading"><div><span class="eyebrow">LIVE TELEMETRY</span><h2>Monitoring</h2><p>Values reflect recorded experiments or are labeled as simulated.</p></div><span class="live-tag"><i></i> AUTO REFRESH</span></div><div class="metric-grid"><article class="metric-card"><span>TOTAL EXPERIMENTS</span><b id="metric-total">0</b><small>Recorded in this session</small></article><article class="metric-card"><span>COMPLETED</span><b id="metric-completed">0</b><small>Finished simulations</small></article><article class="metric-card"><span>ACTIVE</span><b id="metric-running">0</b><small>Currently running</small></article><article class="metric-card"><span>RECOVERY RATE</span><b id="metric-recovery">—</b><small>Completed runs only</small></article></div><div class="monitor-strip"><div><span class="monitor-dot good"></span><b>Application readiness</b><span id="health-status">Checking local health endpoint…</span></div><div><span class="eyebrow">MEASUREMENT NOTE</span><p>CPU, memory, and service-failure indicators are simulated. They are not operating-system readings.</p></div></div></section>
+
+        <section id="activity" class="section-block history-panel"><div class="history-head"><div><span class="eyebrow">AUDIT TRAIL</span><h2>Activity log</h2><p>Recent experiments recorded by the backend.</p></div><button class="pill-button" onclick="load()">Refresh</button></div><div id="notice" class="notice" aria-live="polite"></div><div class="table-wrap"><table><thead><tr><th>EXPERIMENT</th><th>SCENARIO</th><th>STATUS</th><th>OBSERVATION</th><th>ACTIONS</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+
+        <section id="settings" class="section-block settings-panel"><div><span class="eyebrow">LAB CONFIGURATION</span><h2>Settings and safeguards</h2><p>This learning environment uses bounded simulations with a maximum duration of 60 seconds and at most two concurrent experiments.</p></div><div class="settings-pills"><span>Local demo session</span><span>Safe simulation mode</span><span>H2 in-memory history</span></div></section>
+        <footer>ChaosLab · Safe application-local simulation · No real services are terminated</footer>
+      </main>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body></html>

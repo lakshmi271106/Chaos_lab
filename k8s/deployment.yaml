@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaoslab
+  namespace: chaoslab
+spec:
+  replicas: 1
+  strategy: { type: RollingUpdate }
+  selector:
+    matchLabels: { app: chaoslab }
+  template:
+    metadata:
+      labels: { app: chaoslab }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001 }
+      containers:
+        - name: chaoslab
+          image: chaoslab:latest
+          imagePullPolicy: IfNotPresent
+          ports: [{ name: http, containerPort: 8081 }]
+          envFrom: [{ configMapRef: { name: chaoslab-config } }]
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          startupProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]

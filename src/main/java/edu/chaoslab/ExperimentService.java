@@ -1,0 +1,16 @@
+package edu.chaoslab;
+import jakarta.annotation.PreDestroy;import jakarta.validation.Valid;import jakarta.validation.constraints.*;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;import java.util.List;import java.util.concurrent.*;
+@Service public class ExperimentService {
+ private final ExperimentRepository repo;private final ExecutorService executor=new ThreadPoolExecutor(2,2,0L,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<>(2),new ThreadPoolExecutor.AbortPolicy());private final ConcurrentMap<Long,java.util.concurrent.Future<?>> tasks=new ConcurrentHashMap<>();
+ public ExperimentService(ExperimentRepository r){repo=r;}
+ public record CreateRequest(@NotBlank @Size(max=100) String name,@Size(max=1000) String description,@NotNull Experiment.Scenario scenario,@Min(1) @Max(60) int durationSeconds,@Min(1) @Max(100) int intensity){}
+ public record Dashboard(long total,long completed,long failed,long running,double recoveryRate,int resilienceScore){}
+ @Transactional public Experiment create(@Valid CreateRequest r){return repo.save(new Experiment(r.name(),r.description(),r.scenario(),r.durationSeconds(),r.intensity()));}
+ public List<Experiment> list(){return repo.findAllByOrderByCreatedAtDesc();} public Experiment get(long id){return repo.findById(id).orElseThrow(()->new NotFoundException("Experiment not found"));}
+ @Transactional public Experiment start(long id){Experiment e=get(id);if(repo.countByStatus(Experiment.State.RUNNING)>=2)throw new IllegalStateException("At most two experiments may run at once");e.start();repo.save(e);java.util.concurrent.Future<?> task=executor.submit(()->run(e.getId(),e.getScenario(),e.getDurationSeconds(),e.getIntensity()));tasks.put(id,task);return e;}
+ private void run(long id,Experiment.Scenario s,int dur,int intensity){try{Thread.sleep(dur*1000L);repo.findById(id).ifPresent(e->{long ms=switch(s){case RESPONSE_DELAY,NETWORK_LATENCY->intensity*20L;case SERVICE_FAILURE->500L;default->40L+intensity;};e.complete(ms,s!=Experiment.Scenario.SERVICE_FAILURE,"Simulated "+s+"; host resources and network interfaces unchanged");repo.save(e);});}catch(InterruptedException ex){Thread.currentThread().interrupt();}finally{tasks.remove(id);}}
+ @Transactional public Experiment stop(long id){Experiment e=get(id);e.stop();java.util.concurrent.Future<?> task=tasks.remove(id);if(task!=null)task.cancel(true);return repo.save(e);} @Transactional public void delete(long id){Experiment e=get(id);if(e.getStatus()==Experiment.State.RUNNING)throw new IllegalStateException("Stop a running experiment before deleting it");repo.delete(e);}
+ public Dashboard dashboard(){var a=list();long done=a.stream().filter(e->e.getStatus()==Experiment.State.COMPLETED).count(),rec=a.stream().filter(e->e.getStatus()==Experiment.State.COMPLETED&&e.isRecovered()).count();double rate=done==0?0:100d*rec/done;return new Dashboard(a.size(),done,a.stream().filter(e->e.getStatus()==Experiment.State.FAILED).count(),a.stream().filter(e->e.getStatus()==Experiment.State.RUNNING).count(),rate,(int)Math.round(rate));}
+ public static class NotFoundException extends RuntimeException{public NotFoundException(String m){super(m);}}
+ @PreDestroy public void shutdown(){tasks.values().forEach(task->task.cancel(true));executor.shutdownNow();}
+}

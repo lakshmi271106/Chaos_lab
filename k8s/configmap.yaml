@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chaoslab-config
+  namespace: chaoslab
+data:
+  SPRING_PROFILES_ACTIVE: "default"

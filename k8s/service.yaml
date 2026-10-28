@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: chaoslab
+  namespace: chaoslab
+spec:
+  type: ClusterIP
+  selector: { app: chaoslab }
+  ports: [{ port: 8080, targetPort: http }]
